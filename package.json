@@ -1,0 +1,28 @@
+{
+  "name": "macrofitscraper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.4",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.1",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  }
+}
