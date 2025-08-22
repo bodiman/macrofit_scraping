@@ -1,19 +1,17 @@
 import axios from "axios";
-import * as cheerio from 'cheerio';
+import * as qs from "qs";
 import CalDiningScraper from "../src/cal_dining_menus/cal_dining_scraper";
-import fs from "fs";
 
 async function main() {
-    const response = await axios.get('https://dining.berkeley.edu/menus/');
-    const $ = cheerio.load(response.data);
+  const scraper = new CalDiningScraper();
+  const dataStrings = await scraper.getAvailableDates();
 
-    // Select all cafe titles
-    const halls: string[] = [];
-    $("span.cafe-title").each((_, el) => {
-        halls.push($(el).text().trim());
-    });
+  for (const dateString of dataStrings) {
+    await scraper.loadPage(dateString.value);
+  }
 
-    console.log("Dining Halls:", halls);
+  const configs = await scraper.getConfigs(new Date("2025-08-21"));
+  const foods = await scraper.scrape({ configs });
 }
 
-main();
+main().catch(console.error);

@@ -1,35 +1,12 @@
-import { InferInsertModel } from "drizzle-orm";
-import { integer, numeric, pgTable, timestamp, varchar, vector } from "drizzle-orm/pg-core";
+import { InferInsertModel, sql } from "drizzle-orm";
+import { integer, numeric, pgTable, timestamp, varchar, vector, uuid, jsonb } from "drizzle-orm/pg-core";
 
-export const menus = pgTable('menus', {
-    id: varchar().primaryKey(),
-    location: varchar().references(() => locations.id).notNull(),
-    start_time: timestamp().notNull(),
-    end_time: timestamp().notNull(),
-    created_at: timestamp().defaultNow().notNull(),
-    updated_at: timestamp().defaultNow().notNull(),
-    food_ids: varchar().array().references(() => foods.id).notNull(),
-});
+type ServingUnit = {
+    name: string;   // e.g. "cup"
+    grams: number;  // grams per that unit for this food
+};
 
-export const locations = pgTable('locations', {
-    id: varchar().primaryKey(),
-    name: varchar().notNull(),
-    coordinates: vector("coordinates", {dimensions: 2}).notNull(),
-    created_at: timestamp().defaultNow().notNull(),
-    updated_at: timestamp().defaultNow().notNull(),
-});
-
-export const foods = pgTable('foods', {
-    id: varchar().primaryKey(),
-    name: varchar().notNull(),
-    brand: varchar().notNull(),
-    serving_size: integer().notNull(),
-    serving_units: varchar().references(() => serving_units.id).notNull(),
-    created_at: timestamp().defaultNow().notNull(),
-    updated_at: timestamp().defaultNow().notNull(),
-    macro_percentage_error_estimate: integer().notNull(),
-    macro_information_source: varchar().references(() => macro_information_sources.id).notNull(),
-
+export const macroTypes = {
     calories: numeric("calories", {precision: 7, scale: 3}), // kcal
     protein: numeric("protein", {precision: 7, scale: 3}), // g
     fat: numeric("fat", {precision: 7, scale: 3}), // g
@@ -58,24 +35,61 @@ export const foods = pgTable('foods', {
     vitamin_b12: numeric("vitamin_b12", {precision: 7, scale: 3}), // mg
     vitamin_e: numeric("vitamin_e", {precision: 7, scale: 3}), // mg
     vitamin_k: numeric("vitamin_k", {precision: 7, scale: 3}), // mg
+}
 
+export const macros = pgTable('macros', {
+    id: uuid().primaryKey().defaultRandom(),
+    ...macroTypes,
+});
+
+export const menus = pgTable('menus', {
+    id: uuid().primaryKey().defaultRandom(),
+    location: uuid().references(() => locations.id).notNull(),
+    start_time: timestamp().notNull(),
+    end_time: timestamp().notNull(),
+    created_at: timestamp().defaultNow().notNull(),
+    updated_at: timestamp().defaultNow().notNull(),
+});
+
+export const locations = pgTable('locations', {
+    id: uuid().primaryKey().defaultRandom(),
+    name: varchar().notNull(),
+    coordinates: vector("coordinates", {dimensions: 2}).notNull(),
+    created_at: timestamp().defaultNow().notNull(),
+    updated_at: timestamp().defaultNow().notNull(),
+});
+
+export const foods = pgTable('foods', {
+    id: uuid().primaryKey().defaultRandom(),
+    name: varchar().notNull(),
+    brand: varchar().notNull(),
+    serving_size: integer().notNull(),
+    created_at: timestamp().defaultNow().notNull(),
+    updated_at: timestamp().defaultNow().notNull(),
+    macro_percentage_error_estimate: integer().notNull(),
+    macro_information_source: uuid().references(() => macro_information_sources.id).notNull(),
+
+    serving_units: jsonb("serving_units")
+    .$type<ServingUnit[]>()                 // tells TS what the JSON shape is
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+
+    macros_id: uuid().references(() => macros.id).notNull(),
     macro_embedding: vector("macro_embedding", {dimensions: 28}).notNull(),
 });
 
-export const serving_units = pgTable('serving_units', {
-    id: varchar().primaryKey(),
-    name: varchar().notNull(),
-    grams: numeric().notNull(),
-    created_at: timestamp().defaultNow(),
-});
+export const foodServing = pgTable('food_serving', {
+    id: uuid().primaryKey().defaultRandom(),
+    food_id: uuid().references(() => foods.id).notNull(),
+    serving_unit: varchar().notNull(),
+    grams: integer().notNull(),
+}); 
 
 export const macro_information_sources = pgTable('macro_information_sources', {
-    id: varchar().primaryKey(),
+    id: uuid().primaryKey().defaultRandom(),
     name: varchar().notNull(),
     description: varchar(),
     error_confidence_description: varchar(),
-    created_at: timestamp().defaultNow(),
 });
-
 
 export type NewFood = InferInsertModel<typeof foods>;
