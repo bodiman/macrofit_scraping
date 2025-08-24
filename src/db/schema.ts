@@ -1,5 +1,5 @@
 import { InferInsertModel, sql } from "drizzle-orm";
-import { integer, numeric, pgTable, timestamp, varchar, vector, uuid, jsonb } from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, timestamp, varchar, vector, uuid, jsonb, unique } from "drizzle-orm/pg-core";
 
 type ServingUnit = {
     name: string;   // e.g. "cup"
@@ -44,7 +44,7 @@ export const macros = pgTable('macros', {
 
 export const menus = pgTable('menus', {
     id: uuid().primaryKey().defaultRandom(),
-    location: uuid().references(() => locations.id).notNull(),
+    location: uuid().references(() => locations.id),
     start_time: timestamp().notNull(),
     end_time: timestamp().notNull(),
     created_at: timestamp().defaultNow().notNull(),
@@ -57,7 +57,9 @@ export const locations = pgTable('locations', {
     coordinates: vector("coordinates", {dimensions: 2}).notNull(),
     created_at: timestamp().defaultNow().notNull(),
     updated_at: timestamp().defaultNow().notNull(),
-});
+}, (table) => ({
+    uniqueNameLocation: unique().on(table.name, table.coordinates),
+}));
 
 export const foods = pgTable('foods', {
     id: uuid().primaryKey().defaultRandom(),
@@ -78,18 +80,22 @@ export const foods = pgTable('foods', {
     macro_embedding: vector("macro_embedding", {dimensions: 28}).notNull(),
 });
 
-export const foodServing = pgTable('food_serving', {
+export const menuFoods = pgTable('menu_foods', {
     id: uuid().primaryKey().defaultRandom(),
+    menu_id: uuid().references(() => menus.id).notNull(),
     food_id: uuid().references(() => foods.id).notNull(),
-    serving_unit: varchar().notNull(),
-    grams: integer().notNull(),
-}); 
+    created_at: timestamp().defaultNow().notNull(),
+}, (table) => ({
+    uniqueMenuFood: unique().on(table.menu_id, table.food_id),
+})); 
 
 export const macro_information_sources = pgTable('macro_information_sources', {
     id: uuid().primaryKey().defaultRandom(),
     name: varchar().notNull(),
     description: varchar(),
     error_confidence_description: varchar(),
-});
+}, (table) => ({
+    uniqueSourceName: unique().on(table.name),
+}));
 
 export type NewFood = InferInsertModel<typeof foods>;
