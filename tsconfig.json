@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                // modern enough for top-level await
+    "module": "NodeNext",              // must match moduleResolution
+    "moduleResolution": "NodeNext",    // ESM/CJS aware resolution
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+  },
+  "ts-node": {
+    "esm": true                        // tells ts-node to use its ESM loader
+  }
+}

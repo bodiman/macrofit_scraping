@@ -1,7 +1,7 @@
 // Add Cal Dining locations and information source to database
 
-import { LocationService } from "../db/services/location_service";
-import { ScraperService } from "../db/services/scraper_service";
+import { LocationService } from "../db/services/location_service.ts";
+import { ScraperService } from "../db/services/scraper_service.ts";
 
 async function main() {
     const locationService = new LocationService();

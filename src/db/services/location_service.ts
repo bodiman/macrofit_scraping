@@ -1,6 +1,6 @@
-import { getDB } from '../../index';
-import { locations } from '../schema';
-import { FoodLocationSchema, type FoodLocation } from '../data_transfer_objects/types';
+import { db } from '../../index.ts';
+import { locations } from '../schema.ts';
+import { FoodLocationSchema, type FoodLocation } from '../data_transfer_objects/types.ts';
 import { eq, sql, asc } from 'drizzle-orm';
 
 export class LocationService {
@@ -8,7 +8,7 @@ export class LocationService {
     async createLocation(locationData: unknown): Promise<string> {
         const validatedLocation = FoodLocationSchema.parse(locationData);
         
-        const db = await getDB();
+        // const db = await getDB();
         const result = await db.insert(locations).values({
             name: validatedLocation.name,
             coordinates: [validatedLocation.latitude, validatedLocation.longitude],
@@ -18,7 +18,7 @@ export class LocationService {
     }
 
     async getLocationById(id: string): Promise<any> {
-        const db = await getDB();
+        // const db = await getDB();
         const result = await db.select()
             .from(locations)
             .where(eq(locations.id, id))
@@ -28,7 +28,7 @@ export class LocationService {
     }
 
     async getLocationByName(name: string): Promise<any> {
-        const db = await getDB();
+        // const db = await getDB();
         const result = await db.select()
             .from(locations)
             .where(eq(locations.name, name))
@@ -38,7 +38,7 @@ export class LocationService {
     }
 
     async getAllLocations(): Promise<any[]> {
-        const db = await getDB();
+        // const db = await getDB();
         return await db.select().from(locations);
     }
 
@@ -46,7 +46,7 @@ export class LocationService {
         const coordinates = [locationData.latitude, locationData.longitude];
         
         // First try to find exact match by name and coordinates
-        const db = await getDB();
+        // const db = await getDB();
         const existingLocation = await db.select()
             .from(locations)
             .where(
@@ -93,7 +93,7 @@ export class LocationService {
         // Convert lat/lng to a normalized vector for better distance calculation
         const queryVector = [latitude, longitude];
         
-        const db = await getDB();
+        // const db = await getDB();
         const results = await db.select({
             id: locations.id,
             name: locations.name,
@@ -148,7 +148,7 @@ export class LocationService {
     ): Promise<Array<{ id: string; name: string; latitude: number; longitude: number; distance: number }>> {
         const queryVector = [latitude, longitude];
         
-        const db = await getDB();
+        // const db = await getDB();
         const results = await db.select({
             id: locations.id,
             name: locations.name,

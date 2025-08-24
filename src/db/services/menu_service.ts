@@ -1,7 +1,7 @@
-import { getDB } from '../../index';
-import { locations, menus, foods, macros, macro_information_sources, menuFoods } from '../schema';
-import { MenuWithLocationSchema, MenuSchema, type MenuWithLocation, type Menu, type Food } from '../data_transfer_objects/types';
-import { LocationService } from './location_service';
+import { db } from '../../index.ts';
+import { locations, menus, foods, macros, macro_information_sources, menuFoods } from '../schema.ts';
+import { MenuWithLocationSchema, MenuSchema, type MenuWithLocation, type Menu, type Food } from '../data_transfer_objects/types.ts';
+import { LocationService } from './location_service.ts';
 import { eq, and, gte, lte, desc, sql, inArray } from 'drizzle-orm';
 import z from 'zod';
 
@@ -30,7 +30,7 @@ export class MenuService {
     }
 
     async insertMenuWithLocation(validatedMenu: MenuWithLocation): Promise<string> {
-        const db = await getDB();
+        // const db = await getDB();
         return await db.transaction(async (tx) => {
             const locationId = await this.insertOrGetLocation(tx, validatedMenu.location);
             
@@ -55,7 +55,7 @@ export class MenuService {
     }
 
     async insertMenu(validatedMenu: Menu): Promise<string> {
-        const db = await getDB();
+        // const db = await getDB();
         return await db.transaction(async (tx) => {
             const existingLocation = await tx.select()
                 .from(locations)
@@ -200,7 +200,7 @@ export class MenuService {
         startTime: Date, 
         endTime: Date
     ): Promise<Array<{ id: string; start_time: Date; end_time: Date; location_name: string; foods: Array<Food & { id: string }> }>> {
-        const db = await getDB();
+        // const db = await getDB();
         const results = await db.select({
             menu_id: menus.id,
             menu_start_time: menus.start_time,
@@ -312,7 +312,7 @@ export class MenuService {
         const locationIds = nearbyLocations.map(loc => loc.id);
         const locationDistanceMap = new Map(nearbyLocations.map(loc => [loc.id, { name: loc.name, distance: loc.distance }]));
         
-        const db = await getDB();
+        // const db = await getDB();
         const results = await db.select({
             menu_id: menus.id,
             menu_start_time: menus.start_time,

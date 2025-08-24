@@ -1,5 +1,5 @@
-import { getDB } from '../../index';
-import { macro_information_sources } from '../schema';
+import { db } from '../../index.ts';
+import { macro_information_sources } from '../schema.ts';
 import { eq } from 'drizzle-orm';
 
 export interface MacroInformationSourceData {
@@ -11,7 +11,7 @@ export interface MacroInformationSourceData {
 export class ScraperService {
     
     async createMacroInformationSourceIfNotExists(sourceData: MacroInformationSourceData): Promise<string> {
-        const db = await getDB();
+        // const db = await getDB();
         const existingSource = await db.select()
             .from(macro_information_sources)
             .where(eq(macro_information_sources.name, sourceData.name))
@@ -31,7 +31,7 @@ export class ScraperService {
     }
 
     async getMacroInformationSourceByName(name: string): Promise<{ id: string; name: string; description: string | null; error_confidence_description: string | null } | null> {
-        const db = await getDB();
+        // const db = await getDB();
         const result = await db.select()
             .from(macro_information_sources)
             .where(eq(macro_information_sources.name, name))
@@ -41,12 +41,12 @@ export class ScraperService {
     }
 
     async getAllMacroInformationSources(): Promise<Array<{ id: string; name: string; description: string | null; error_confidence_description: string | null }>> {
-        const db = await getDB();
+        // const db = await getDB();
         return await db.select().from(macro_information_sources);
     }
 
     async deleteMacroInformationSource(id: string): Promise<void> {
-        const db = await getDB();
+        // const db = await getDB();
         await db.delete(macro_information_sources)
             .where(eq(macro_information_sources.id, id));
     }

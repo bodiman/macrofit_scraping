@@ -2,9 +2,11 @@
   "name": "macrofitscraper",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "scrape:cal": "node --loader ts-node/esm src/cal_dining_menus/cal_dining_scraper.ts"
   },
   "author": "",
   "license": "ISC",
@@ -22,10 +24,12 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/pg": "^8.15.5",
+    "@types/progress": "^2.0.7",
     "@types/qs": "^6.14.0",
     "drizzle-kit": "^0.31.4",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2"
   }

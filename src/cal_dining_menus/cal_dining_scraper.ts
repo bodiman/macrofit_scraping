@@ -1,11 +1,11 @@
-import MenuScraper from "../menu_scraper";
+import MenuScraper from "../menu_scraper.ts";
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as qs from "qs";
-import { macroTypes } from "../db/schema";
-import { type MenuWithLocation, type Food, Macros } from "../db/data_transfer_objects/types";
-import ProgressBar = require("progress");
+import { macroTypes } from "../db/schema.ts";
+import { type MenuWithLocation, type Food, Macros } from "../db/data_transfer_objects/types.ts";
+import ProgressBar from "progress";
 
 
 
@@ -63,7 +63,7 @@ class CalDiningScraper extends MenuScraper {
         const dates: Date[] = [];
       
         $("#date option").each((_, el) => {
-          const value = $(el).attr("value")?.trim();
+          const value = $(el).attr("value")?.trim()!;
           const date = this.dateFromDateString(value);
           if (value && value !== "") {
             dates.push(date);
@@ -249,9 +249,7 @@ class CalDiningScraper extends MenuScraper {
             grams: 28.3495,
         }]
 
-        const macros = {
-
-        }
+        const macros: Record<string, number> = {};
 
         $("div.nutration-details li").each((_, el) => {
             const $el = $(el);

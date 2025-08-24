@@ -1,6 +1,6 @@
-import { MenuService } from "./db/services/menu_service";
-import { type Menu, type MenuWithLocation } from "./db/data_transfer_objects/types";
-import ProgressBar = require("progress");
+import { MenuService } from "./db/services/menu_service.ts";
+import { type Menu, type MenuWithLocation } from "./db/data_transfer_objects/types.ts";
+import ProgressBar from "progress";
 
 abstract class MenuScraper {
     protected menuService: MenuService;
