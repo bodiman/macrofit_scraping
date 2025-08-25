@@ -1,5 +1,4 @@
-import { parse } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { tzOffset } from "@date-fns/tz";
 
 const TIMEZONE = "America/Los_Angeles";
 
@@ -19,8 +18,12 @@ export function parseTimeToTimestamp(timeStr: string, date: Date = new Date(), t
 
   // Build full date-time string
   const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
-  const parsed = parse(`${dateStr} ${normalized.trim()}`, "yyyy-MM-dd h:mm a", new Date());
+  const full_date_str = `${dateStr} ${normalized.trim()}`;
+  const datetime = new Date(full_date_str);
+
+  const offset = tzOffset(timezone, date);
+  datetime.setMinutes(datetime.getMinutes() - offset);
 
   // Convert into California local time
-  return toZonedTime(parsed, TIMEZONE);
+  return datetime;
 }

@@ -178,10 +178,15 @@ class CalDiningScraper extends MenuScraper {
                   .trim()
                   .split(" - ")[1] || "Unknown";
               
-                // Extract time ranges from the dining hall block
+                // Interpret these as local timestamps
                 const times = $(hallEl).find("div.times span").map((_, t) => $(t).text().trim()).get();
                 const [startRaw, endRaw] = times[mealIdx]?.split(" - ") || [];
-              
+
+               if (!startRaw || !endRaw) {
+                   console.warn(`Missing time data for ${diningHallName} - ${mealName}`);
+                   throw new Error(`No date found for ${diningHallName} - ${mealName}`);
+               }
+
                 // Interpret these as local timestamps
                 const start_time = parseTimeToTimestamp(startRaw, date, "America/Los_Angeles");
                 const end_time = parseTimeToTimestamp(endRaw, date, "America/Los_Angeles");
@@ -202,10 +207,10 @@ class CalDiningScraper extends MenuScraper {
                     end_time,
                   });
                 });
-        });
+            });
         });
 
-        // Build location mapping using bulk retrieval
+        // Build location mapping using bulk retrieval)
         this.locationMapping = await this.locationService.getLocationsByDiningHallNames(Array.from(diningHallNames));
 
         return results;
@@ -227,6 +232,7 @@ class CalDiningScraper extends MenuScraper {
                 } else {
                     const locationId = this.locationMapping[param.diningHall];
                     if (!locationId) {
+                        console.log(Object.keys(this.locationMapping));
                         console.warn(`Location not found for dining hall: ${param.diningHall}`);
                         continue;
                     }
