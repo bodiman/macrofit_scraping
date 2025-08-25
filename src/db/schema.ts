@@ -45,7 +45,7 @@ export const macros = pgTable('macros', {
 export const menus = pgTable('menus', {
     id: uuid().primaryKey().defaultRandom(),
     name: varchar().notNull(),
-    location: uuid().references(() => locations.id),
+    location: uuid().references(() => locations.id).notNull(),
     start_time: timestamp().notNull(),
     end_time: timestamp().notNull(),
     created_at: timestamp().defaultNow().notNull(),

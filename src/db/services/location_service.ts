@@ -1,7 +1,7 @@
 import { db } from '../../index.ts';
 import { locations } from '../schema.ts';
 import { FoodLocationSchema, type FoodLocation } from '../data_transfer_objects/types.ts';
-import { eq, sql, asc } from 'drizzle-orm';
+import { eq, sql, asc, inArray } from 'drizzle-orm';
 
 export class LocationService {
     
@@ -35,6 +35,38 @@ export class LocationService {
             .limit(1);
         
         return result[0] || null;
+    }
+
+    async getLocationByDiningHallName(diningHallName: string): Promise<{ id: string; name: string } | null> {
+        const result = await db.select({
+            id: locations.id,
+            name: locations.name
+        })
+            .from(locations)
+            .where(eq(locations.name, diningHallName))
+            .limit(1);
+        
+        return result[0] || null;
+    }
+
+    async getLocationsByDiningHallNames(diningHallNames: string[]): Promise<Record<string, string>> {
+        if (diningHallNames.length === 0) {
+            return {};
+        }
+
+        const results = await db.select({
+            id: locations.id,
+            name: locations.name
+        })
+            .from(locations)
+            .where(inArray(locations.name, diningHallNames));
+        
+        const mapping: Record<string, string> = {};
+        for (const result of results) {
+            mapping[result.name] = result.id;
+        }
+        
+        return mapping;
     }
 
     async getAllLocations(): Promise<any[]> {

@@ -4,8 +4,11 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as qs from "qs";
 import { macroTypes } from "../db/schema.ts";
-import { type MenuWithLocation, type Food, Macros } from "../db/data_transfer_objects/types.ts";
+import { type Menu, type Food, Macros } from "../db/data_transfer_objects/types.ts";
+import { LocationService } from "../db/services/location_service.ts";
 import ProgressBar from "progress";
+import { parseTimeToTimestamp } from "../utils/time_parsing.ts";
+
 
 type MenuScrapingParams = {
     diningHall: string;
@@ -14,9 +17,14 @@ type MenuScrapingParams = {
     menu_id: string;
     id: string;
     location: string;
+    start_time: Date;
+    end_time: Date;
 };
 
 class CalDiningScraper extends MenuScraper {
+
+    private locationService: LocationService;
+    private locationMapping: Record<string, string> = {};
 
     private readonly CALDINING_MACRONUTRIENT_NAME_MAP: Record<string, string> = {
         'Calories (kcal):': 'calories',
@@ -44,6 +52,7 @@ class CalDiningScraper extends MenuScraper {
     constructor () {
         super();
         this.pages = {} as Record<string, string>;
+        this.locationService = new LocationService();
     }
 
     private getDateString(date: Date): string {
@@ -153,41 +162,57 @@ class CalDiningScraper extends MenuScraper {
         const $ = cheerio.load(html);
 
         const results: MenuScrapingParams[] = [];
+        const diningHallNames = new Set<string>();
 
         $("ul.cafe-location > li").each((_, hallEl) => {
             const diningHallName = $(hallEl).find("span.cafe-title").first().text().trim();
+            diningHallNames.add(diningHallName);
         
-            // Each meal-period section under the dining hall
-            $(hallEl).find("ul.meal-period").each((_, mealEl) => {
-                const header = $(mealEl).children("li").first(); // <li class="preiod-name …">
+            $(hallEl).find("ul.meal-period").each((mealIdx, mealEl) => {
+                const header = $(mealEl).children("li").first();
                 const mealName = header
-                    .find("> span")
-                    .contents()
-                    .filter((_, n) => n.type === "text") // pick only the text node, not the icon <span>
-                    .text()
-                    .trim() || "Unknown"
-                    .split(" - ")[1];
-        
+                  .find("> span")
+                  .contents()
+                  .filter((_, n) => n.type === "text")
+                  .text()
+                  .trim()
+                  .split(" - ")[1] || "Unknown";
+              
+                // Extract time ranges from the dining hall block
+                const times = $(hallEl).find("div.times span").map((_, t) => $(t).text().trim()).get();
+                const [startRaw, endRaw] = times[mealIdx]?.split(" - ") || [];
+              
+                // Interpret these as local timestamps
+                const start_time = parseTimeToTimestamp(startRaw, date, "America/Los_Angeles");
+                const end_time = parseTimeToTimestamp(endRaw, date, "America/Los_Angeles");
+                
+                console.log(startRaw, endRaw);
+                console.log(start_time, end_time);
+              
                 $(mealEl).find("li[data-menuid][data-id]").each((_, recipeEl) => {
-                    const $recipe = $(recipeEl);
-
-                    results.push({
-                        diningHall: diningHallName,
-                        mealName,
-                        recipeName: $recipe.children().first().text().trim(),
-                        menu_id: $recipe.attr("data-menuid")!!,
-                        id: $recipe.attr("data-id")!!,
-                        location: $recipe.attr("data-location")!!,
-                    });
+                  const $recipe = $(recipeEl);
+                  results.push({
+                    diningHall: diningHallName,
+                    mealName,
+                    recipeName: $recipe.children().first().text().trim(),
+                    menu_id: $recipe.attr("data-menuid")!,
+                    id: $recipe.attr("data-id")!,
+                    location: $recipe.attr("data-location")!,
+                    start_time,
+                    end_time,
+                  });
                 });
-            });
         });
+        });
+
+        // Build location mapping using bulk retrieval
+        this.locationMapping = await this.locationService.getLocationsByDiningHallNames(Array.from(diningHallNames));
 
         return results;
     }
 
-    async scrape(params: MenuScrapingParams[]): Promise<MenuWithLocation[]> {
-        const menuMap = new Map<string, MenuWithLocation>();
+    async scrape(params: MenuScrapingParams[]): Promise<Menu[]> {
+        const menuMap = new Map<string, Menu>();
         const failed_params: MenuScrapingParams[] = [];
 
         const bar = new ProgressBar(":bar :percent", { total: params.length, complete: "=", incomplete: " ", width: 20 });
@@ -200,16 +225,17 @@ class CalDiningScraper extends MenuScraper {
                 if (menuMap.has(menuKey)) {
                     menuMap.get(menuKey)!.foods.push(food);
                 } else {
-                    const menu: MenuWithLocation = {
+                    const locationId = this.locationMapping[param.diningHall];
+                    if (!locationId) {
+                        console.warn(`Location not found for dining hall: ${param.diningHall}`);
+                        continue;
+                    }
+
+                    const menu: Menu = {
                         name: param.mealName,
-                        location: {
-                            name: param.diningHall,
-                            description: `${param.diningHall} dining location`,
-                            latitude: 37.8719,
-                            longitude: -122.2585
-                        },
-                        start_time: new Date().toISOString(),
-                        end_time: new Date(Date.now() + 3600000).toISOString(),
+                        location: locationId,
+                        start_time: param.start_time,
+                        end_time: param.end_time,
                         foods: [food]
                     };
                     menuMap.set(menuKey, menu);
@@ -338,7 +364,7 @@ async function main() {
         console.log(`Retrieved ${uniquemeals.size} unique meals for ${date}`)
         console.log(uniquemeals)
     }
-    const menus: MenuWithLocation[] = await scraper.scrape(batchedConfigs);
+    const menus: Menu[] = await scraper.scrape(batchedConfigs);
 
     console.log(`Retrieved ${menus.length} menus`)
 
@@ -349,6 +375,8 @@ async function main() {
     console.log("--------------------------------")
     console.log(menuIds);
     console.log("--------------------------------")
+
+    console.log("Cal Dining Menus Scraped! You may hit ctrl+c to exit.")
 }
 
 main();

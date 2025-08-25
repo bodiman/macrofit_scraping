@@ -72,8 +72,8 @@ export class MenuService {
             const menuResult = await tx.insert(menus).values({
                 location: locationId,
                 name: validatedMenu.name,
-                start_time: new Date(validatedMenu.start_time),
-                end_time: new Date(validatedMenu.end_time),
+                start_time: validatedMenu.start_time,
+                end_time: validatedMenu.end_time,
             }).returning({ id: menus.id });
             
             const menuId = menuResult[0].id;

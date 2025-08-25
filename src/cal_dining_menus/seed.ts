@@ -68,7 +68,7 @@ async function main() {
         }
     }
     
-    console.log('Seed data creation completed!');
+    console.log('Seed data creation completed! You may hit ctrl+c to exit.');
 }
 
 main().catch(console.error);

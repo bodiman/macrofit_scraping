@@ -68,12 +68,8 @@ export type FoodLocation = z.infer<typeof FoodLocationSchema>;
 export const MenuSchema = z.object({
     name: z.string().min(1),
     location: z.string().min(1),
-    start_time: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: "Invalid datetime string",
-    }),
-    end_time: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: "Invalid datetime string",
-    }),
+    start_time: z.date(),
+    end_time: z.date(),
     foods: z.array(FoodSchema),
 });
 
