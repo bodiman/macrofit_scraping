@@ -27,9 +27,12 @@ export class LocationService {
         return result[0] || null;
     }
 
-    async getLocationByName(name: string): Promise<any> {
+    async getLocationByName(name: string): Promise<{ id: string; name: string } | null> {
         // const db = await getDB();
-        const result = await db.select()
+        const result = await db.select({
+            id: locations.id,
+            name: locations.name
+        })
             .from(locations)
             .where(eq(locations.name, name))
             .limit(1);
@@ -37,20 +40,8 @@ export class LocationService {
         return result[0] || null;
     }
 
-    async getLocationByDiningHallName(diningHallName: string): Promise<{ id: string; name: string } | null> {
-        const result = await db.select({
-            id: locations.id,
-            name: locations.name
-        })
-            .from(locations)
-            .where(eq(locations.name, diningHallName))
-            .limit(1);
-        
-        return result[0] || null;
-    }
-
-    async getLocationsByDiningHallNames(diningHallNames: string[]): Promise<Record<string, string>> {
-        if (diningHallNames.length === 0) {
+    async getLocationsByName(locationNames: string[]): Promise<Record<string, string>> {
+        if (locationNames.length === 0) {
             return {};
         }
 
@@ -59,7 +50,7 @@ export class LocationService {
             name: locations.name
         })
             .from(locations)
-            .where(inArray(locations.name, diningHallNames));
+            .where(inArray(locations.name, locationNames));
         
         const mapping: Record<string, string> = {};
         for (const result of results) {

@@ -211,7 +211,7 @@ class CalDiningScraper extends MenuScraper {
         });
 
         // Build location mapping using bulk retrieval)
-        this.locationMapping = await this.locationService.getLocationsByDiningHallNames(Array.from(diningHallNames));
+        this.locationMapping = await this.locationService.getLocationsByName(Array.from(diningHallNames));
 
         return results;
     }
