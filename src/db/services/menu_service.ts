@@ -1,6 +1,6 @@
 import { db } from '../../index.ts';
 import { locations, menus, foods, macros, macro_information_sources, menuFoods } from '../schema.ts';
-import { MenuWithLocationSchema, MenuSchema, type MenuWithLocation, type Menu, type Food } from '../data_transfer_objects/types.ts';
+import { MenuWithLocationSchema, MenuSchema, type MenuWithLocation, type Menu, type BasicMenu, type MenuWithFoods, type MenuWithFoodsAndDistance } from '../data_transfer_objects/types.ts';
 import { LocationService } from './location_service.ts';
 import { eq, and, gte, lte, desc, sql, inArray } from 'drizzle-orm';
 import z from 'zod';
@@ -36,6 +36,7 @@ export class MenuService {
             
             const menuResult = await tx.insert(menus).values({
                 location: locationId,
+                name: validatedMenu.name,
                 start_time: new Date(validatedMenu.start_time),
                 end_time: new Date(validatedMenu.end_time),
             }).returning({ id: menus.id });
@@ -70,6 +71,7 @@ export class MenuService {
             
             const menuResult = await tx.insert(menus).values({
                 location: locationId,
+                name: validatedMenu.name,
                 start_time: new Date(validatedMenu.start_time),
                 end_time: new Date(validatedMenu.end_time),
             }).returning({ id: menus.id });
@@ -199,8 +201,37 @@ export class MenuService {
         locationName: string, 
         startTime: Date, 
         endTime: Date
-    ): Promise<Array<{ id: string; start_time: Date; end_time: Date; location_name: string; foods: Array<Food & { id: string }> }>> {
-        // const db = await getDB();
+    ): Promise<BasicMenu[]> {
+        const results = await db.select({
+            id: menus.id,
+            start_time: menus.start_time,
+            end_time: menus.end_time,
+            location_name: locations.name,
+        })
+        .from(menus)
+        .innerJoin(locations, eq(menus.location, locations.id))
+        .where(
+            and(
+                eq(locations.name, locationName),
+                gte(menus.end_time, startTime),
+                lte(menus.start_time, endTime)
+            )
+        )
+        .orderBy(desc(menus.start_time));
+
+        return results.map(row => ({
+            id: row.id,
+            start_time: row.start_time!,
+            end_time: row.end_time!,
+            location_name: row.location_name!,
+        }));
+    }
+
+    async getMenusWithFoodsByNameAndTimeWindow(
+        locationName: string, 
+        startTime: Date, 
+        endTime: Date
+    ): Promise<MenuWithFoods[]> {
         const results = await db.select({
             menu_id: menus.id,
             menu_start_time: menus.start_time,
@@ -230,13 +261,7 @@ export class MenuService {
         )
         .orderBy(desc(menus.start_time));
 
-        const menuMap = new Map<string, {
-            id: string;
-            start_time: Date;
-            end_time: Date;
-            location_name: string;
-            foods: Array<Food & { id: string }>;
-        }>();
+        const menuMap = new Map<string, MenuWithFoods>();
 
         for (const row of results) {
             if (!menuMap.has(row.menu_id)) {
@@ -256,7 +281,7 @@ export class MenuService {
                 id: row.food_id!,
                 name: row.food_name!,
                 brand: row.food_brand!,
-                serving_size: row.food_serving_size!,
+                serving_size: Number(row.food_serving_size!),
                 macro_percentage_error_estimate: row.food_macro_percentage_error_estimate!,
                 macro_information_source: row.macro_information_source_name!,
                 serving_units: row.food_serving_units as any,
@@ -302,7 +327,7 @@ export class MenuService {
         startTime: Date,
         endTime: Date,
         maxDistanceKm: number = 10
-    ): Promise<Array<{ id: string; start_time: Date; end_time: Date; location_name: string; distance: number; foods: Array<Food & { id: string }> }>> {
+    ): Promise<MenuWithFoodsAndDistance[]> {
         const nearbyLocations = await this.locationService.findAllLocationsNear(latitude, longitude, maxDistanceKm);
         
         if (nearbyLocations.length === 0) {
@@ -343,14 +368,7 @@ export class MenuService {
         )
         .orderBy(desc(menus.start_time));
         
-        const menuMap = new Map<string, {
-            id: string;
-            start_time: Date;
-            end_time: Date;
-            location_name: string;
-            distance: number;
-            foods: Array<Food & { id: string }>;
-        }>();
+        const menuMap = new Map<string, MenuWithFoodsAndDistance>();
         
         for (const row of results) {
             if (!menuMap.has(row.menu_id)) {
@@ -372,7 +390,7 @@ export class MenuService {
                 id: row.food_id!,
                 name: row.food_name!,
                 brand: row.food_brand!,
-                serving_size: row.food_serving_size!,
+                serving_size: Number(row.food_serving_size!),
                 macro_percentage_error_estimate: row.food_macro_percentage_error_estimate!,
                 macro_information_source: row.macro_information_source_name!,
                 serving_units: row.food_serving_units as any,

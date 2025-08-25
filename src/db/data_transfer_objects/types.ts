@@ -104,3 +104,25 @@ export const MenuWithLocationSchema = z.object({
 });
 
 export type MenuWithLocation = z.infer<typeof MenuWithLocationSchema>;
+
+// Menu with foods joined from database queries
+export interface MenuWithFoods {
+    id: string;
+    start_time: Date;
+    end_time: Date;
+    location_name: string;
+    foods: Array<Food & { id: string }>;
+}
+
+// Menu with foods and distance for location-based queries
+export interface MenuWithFoodsAndDistance extends MenuWithFoods {
+    distance: number;
+}
+
+// Basic menu without foods for simple queries
+export interface BasicMenu {
+    id: string;
+    start_time: Date;
+    end_time: Date;
+    location_name: string;
+}

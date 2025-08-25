@@ -6,6 +6,8 @@ const client = new Client({
   connectionString: process.env.DATABASE_URL!,
 });
 
+await client.connect();
+
 export const db = drizzle(client);
 
 // let db: ReturnType<typeof drizzle> | null = null;

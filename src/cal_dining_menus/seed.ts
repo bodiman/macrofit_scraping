@@ -40,6 +40,21 @@ async function main() {
             description: "Cafe 3 dining hall at UC Berkeley",
             latitude: 37.86732112692691,
             longitude: -122.26022742849526,
+        }, {
+            name: "Browns Cafe",
+            description: "Browns Cafe dining hall at UC Berkeley",
+            latitude: 37.87378368675578,
+            longitude: -122.264765482792,
+        }, {
+            name: "Eateries At The Student Union",
+            description: "Eateries At The Student Union dining hall at UC Berkeley",
+            latitude: 37.86942266723779,
+            longitude: -122.25969417971582,
+        }, {
+            name: "Golden Bear Cafe",
+            description: "Golden Bear Cafe dining hall at UC Berkeley",
+            latitude: 37.86996214376925,
+            longitude: -122.2596451033638,
         }
     ];
     

@@ -7,8 +7,6 @@ import { macroTypes } from "../db/schema.ts";
 import { type MenuWithLocation, type Food, Macros } from "../db/data_transfer_objects/types.ts";
 import ProgressBar from "progress";
 
-
-
 type MenuScrapingParams = {
     diningHall: string;
     mealName: string;
@@ -189,15 +187,33 @@ class CalDiningScraper extends MenuScraper {
     }
 
     async scrape(params: MenuScrapingParams[]): Promise<MenuWithLocation[]> {
-        const menus: MenuWithLocation[] = [];
+        const menuMap = new Map<string, MenuWithLocation>();
         const failed_params: MenuScrapingParams[] = [];
 
         const bar = new ProgressBar(":bar :percent", { total: params.length, complete: "=", incomplete: " ", width: 20 });
 
         for (const param of params) {
             try {
-                const menu = await this._scrape(param);
-                menus.push(menu);
+                const food = await this._scrapeFood(param);
+                const menuKey = `${param.diningHall} - ${param.mealName}`;
+                
+                if (menuMap.has(menuKey)) {
+                    menuMap.get(menuKey)!.foods.push(food);
+                } else {
+                    const menu: MenuWithLocation = {
+                        name: param.mealName,
+                        location: {
+                            name: param.diningHall,
+                            description: `${param.diningHall} dining location`,
+                            latitude: 37.8719,
+                            longitude: -122.2585
+                        },
+                        start_time: new Date().toISOString(),
+                        end_time: new Date(Date.now() + 3600000).toISOString(),
+                        foods: [food]
+                    };
+                    menuMap.set(menuKey, menu);
+                }
             } catch (error) {
                 console.error(`Failed to scrape menu: ${param.recipeName}`, error);
                 failed_params.push(param);
@@ -212,10 +228,10 @@ class CalDiningScraper extends MenuScraper {
             console.log("--------------------------------")
         }
 
-        return menus;
+        return Array.from(menuMap.values());
     }
 
-    private async _scrape(params: MenuScrapingParams): Promise<MenuWithLocation> {
+    private async _scrapeFood(params: MenuScrapingParams): Promise<Food> {
         const payload = {
             action: "get_recipe_details",
             menu_id: params.menu_id,
@@ -290,76 +306,49 @@ class CalDiningScraper extends MenuScraper {
             macro_information_source: "Nutrition information available at https://dining.berkeley.edu/menus/",
             macros: macros as Macros
         };
-
-        const menu: MenuWithLocation = {
-            name: `${params.diningHall} - ${params.mealName}`,
-            location: {
-                name: params.diningHall,
-                description: `${params.diningHall} dining location`,
-                latitude: 37.8719,
-                longitude: -122.2585
-            },
-            start_time: new Date().toISOString(),
-            end_time: new Date(Date.now() + 3600000).toISOString(),
-            foods: [food]
-        };
         
-        return menu;
+        return food;
     }
 }
 
 export default CalDiningScraper;
 
 async function main() {
+    const override = process.argv.includes('--override');
+    
     const scraper = new CalDiningScraper();
     const availableDates = await scraper.getAvailableDates();
-
-    const allConfigs: MenuScrapingParams[] = [];
-
     console.log("Available dates:")
     console.log("--------------------------------")
     console.log(availableDates);
     console.log("--------------------------------")
 
+    const batchedConfigs: MenuScrapingParams[] = [];
+
     for (const date of availableDates) {
-        console.log(`Scraping date: ${date}`)
-        console.log("--------------------------------")
         await scraper.loadPage(date);
-        const diningHalls = await scraper.getDiningHalls(date);
-        console.log("Dining halls:")
-        console.log("--------------------------------")
-        console.log(diningHalls);
-        console.log("--------------------------------")
-
-        const meals = await scraper.getMeals(date);
-        console.log("Meals:")
-        console.log("--------------------------------")
-        console.log(meals);
-        console.log("--------------------------------")
-
+        
         const configs = await scraper.getFoodRetrievalParams(date);
-        allConfigs.push(...configs);
+        batchedConfigs.push(...configs);
+
+        const uniquemeals = new Set();
+        for (const config of configs) {
+            uniquemeals.add(`${config.diningHall} - ${config.mealName}`);
+        }
+        console.log(`Retrieved ${uniquemeals.size} unique meals for ${date}`)
+        console.log(uniquemeals)
     }
+    const menus: MenuWithLocation[] = await scraper.scrape(batchedConfigs);
 
-    console.log("Retrieved configs.")
-
-    console.log("Scraping menus...")
-    const menus = await scraper.scrape(allConfigs.slice(0, 10));
-    console.log("Example Menu:")
-    console.log("--------------------------------")
-    console.log(menus[0]);
-    console.log("--------------------------------")
+    console.log(`Retrieved ${menus.length} menus`)
 
     console.log("Saving menus...")
 
-    const menuIds = await scraper.saveMenus(menus);
+    const menuIds = await scraper.saveMenus(menus, override);
     console.log("Menu IDs:")
     console.log("--------------------------------")
     console.log(menuIds);
     console.log("--------------------------------")
-
 }
 
-if (require.main === module) {
-    main();
-}
+main();

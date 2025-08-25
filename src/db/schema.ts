@@ -44,6 +44,7 @@ export const macros = pgTable('macros', {
 
 export const menus = pgTable('menus', {
     id: uuid().primaryKey().defaultRandom(),
+    name: varchar().notNull(),
     location: uuid().references(() => locations.id),
     start_time: timestamp().notNull(),
     end_time: timestamp().notNull(),
@@ -65,7 +66,7 @@ export const foods = pgTable('foods', {
     id: uuid().primaryKey().defaultRandom(),
     name: varchar().notNull(),
     brand: varchar().notNull(),
-    serving_size: integer().notNull(),
+    serving_size: numeric("serving_size", {precision: 7, scale: 3}).notNull(),
     created_at: timestamp().defaultNow().notNull(),
     updated_at: timestamp().defaultNow().notNull(),
     macro_percentage_error_estimate: integer().notNull(),
